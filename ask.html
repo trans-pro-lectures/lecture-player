@@ -82,7 +82,7 @@
       <label class="opt"><input type="radio" name="lang" value="en"> English</label>
     </div>
     <div style="margin-top:12px">
-      <div class="muted">سؤالك (اختياري):</div>
+      <div class="muted" id="extraLabel">سؤالك (اختياري):</div>
       <textarea id="extra" rows="2" placeholder="مثلاً: مش فاهم الفرق بين النوعين"></textarea>
     </div>
   </div>
@@ -139,6 +139,17 @@ const MODES = {
     hint: "سؤال وجواب جاهزين تنسخهم في Anki",
     ar: "اعمل من الجزء ده كروت Anki: كل كارت سؤال قصير وإجابة قصيرة، معلومة واحدة في الكارت. اكتبهم في code block، كل كارت في سطر بالشكل ده: السؤال;الإجابة (فاصلة منقوطة بينهم ومن غير ترقيم)، عشان أعمل لهم import في Anki على طول. متضيفش معلومات مش موجودة في الجزء.",
     en: "Make Anki cards from this section: each card a short question and a short answer, one fact per card. Put them in a code block, one card per line, as: question;answer (a semicolon between them, no numbering), ready to import into Anki. Do not add anything that is not in the section."
+  },
+  images: {
+    name: "محتاج صور",
+    hint: "صور حقيقية عليها labels ولينكاتها",
+    ar: "أنا بذاكر الجزء ده ومحتاج صور توضّحه. رشّحلي من 3 لـ 5 صور حقيقية (تشريح، أشعة، صور عمليات، أو رسومات معروفة) من مصادر مفتوحة زي Radiopaedia وWikimedia Commons ومقالات PMC المفتوحة. لكل صورة اكتب: اسمها، لينك ليها، وأبص على إيه فيها بالظبط (أشاور على إيه وأقول إيه). لو مش متأكد إن اللينك شغال قول كده، واديني كلمات بحث أدوّر بيها في Google Images. متحاولش ترسم صورة تشريح بنفسك.",
+    en: "I am studying this section and need pictures to understand it. Suggest 3 to 5 real images (anatomy, imaging, operative photos or well-known drawings) from open sources such as Radiopaedia, Wikimedia Commons and open-access PMC articles. For each image give: its name, a link to it, and exactly what to look at in it (what to point to and what to say). If you are not sure a link works, say so and give me search words for Google Images. Do not draw an anatomy image yourself."
+  },
+  custom: {
+    name: "طلب خاص",
+    hint: "اكتب اللي إنت عايزه بالظبط",
+    custom: true
   }
 };
 const LANG_LINE = {
@@ -172,11 +183,19 @@ function build() {
   const lang = document.querySelector("input[name=lang]:checked").value;
   const M = MODES[mode];
   const extra = $("extra").value.trim();
+  $("extraLabel").textContent = M.custom ? "اكتب طلبك هنا:" : "سؤالك (اختياري):";
+  $("extra").placeholder = M.custom ? "مثلاً: اعملي جدول مقارنة بين الـ MCL والـ LCL" : "مثلاً: مش فاهم الفرق بين النوعين";
   const intro = lang === "ar"
     ? `ده جزء من كتاب مذاكرة طبي معمول من محاضرة جامعية مسجّلة.\nالمحاضرة: ${data.l}\nالجزء: ${data.t}`
     : `This is part of a medical study book made from a recorded university lecture.\nLecture: ${data.l}\nSection: ${data.t}`;
-  let p = `${intro}\n\n${M[lang]}`;
-  if (extra) p += (lang === "ar" ? "\n\nوسؤالي كمان: " : "\n\nMy own question: ") + extra;
+  let p;
+  if (M.custom) {
+    const ask = extra || (lang === "ar" ? "(اكتب طلبك في الخانة)" : "(write your request in the box)");
+    p = `${intro}\n\n${lang === "ar" ? "طلبي: " : "My request: "}${ask}`;
+  } else {
+    p = `${intro}\n\n${M[lang]}`;
+    if (extra) p += (lang === "ar" ? "\n\nوسؤالي كمان: " : "\n\nMy own question: ") + extra;
+  }
   p += `\n\n${LANG_LINE[lang]}\n\n"""\n${data.b}\n"""`;
   $("prompt").value = p;
 }
@@ -208,7 +227,8 @@ function renderModes() {
     b.className = "mode";
     b.setAttribute("aria-pressed", k === mode);
     b.innerHTML = `<b>${M.name}</b><span>${M.hint}</span>`;
-    b.onclick = () => { mode = k; store("ask.mode", k); renderModes(); build(); };
+    b.onclick = () => { mode = k; store("ask.mode", k); renderModes(); build();
+                        if (M.custom) $("extra").focus(); };
     box.appendChild(b);
   }
 }
