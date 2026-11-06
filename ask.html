@@ -170,6 +170,16 @@ function store(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
 function load(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
 
 async function decode(hash) {
+  // short link (a QR printed beside a heading): #s.<book>.<section> - the
+  // section is read from ask/<book>.json beside this page
+  const q = /^#s\.([A-Za-z0-9_-]+)\.([0-9.]+)$/.exec(hash);
+  if (q) {
+    const r = await fetch(`ask/${q[1]}.json`, { cache: "no-cache" });
+    if (!r.ok) throw new Error("no book");
+    const d = (await r.json())[q[2]];
+    if (!d) throw new Error("no section");
+    return d;
+  }
   const m = /^#1\.([A-Za-z0-9_-]+)$/.exec(hash);
   if (!m) throw new Error("bad link");
   let s = m[1].replace(/-/g, "+").replace(/_/g, "/");
