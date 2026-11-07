@@ -183,7 +183,7 @@ function load(k) { try { return localStorage.getItem(k); } catch (e) { return nu
 async function decode(hash) {
   // short link (a QR printed beside a heading): #s.<book>.<section> - the
   // section is read from ask/<book>.json beside this page
-  const q = /^#s\.([A-Za-z0-9_-]+)\.([0-9.]+)$/.exec(hash);
+  const q = /^#s\.([A-Za-z0-9_-]+)\.([0-9A-Za-z.]+)$/.exec(hash);
   if (q) {
     const r = await fetch(`ask/${q[1]}.json`, { cache: "no-cache" });
     if (!r.ok) throw new Error("no book");
@@ -284,13 +284,13 @@ async function menu(book, sid) {
 }
 
 (async () => {
-  const mm = /^#m\.([A-Za-z0-9_-]+)\.([0-9.]+)$/.exec(location.hash);
+  const mm = /^#m\.([A-Za-z0-9_-]+)\.([0-9A-Za-z.]+)$/.exec(location.hash);
   if (mm) {
     try { await menu(mm[1], mm[2]); }
     catch (e) { $("menu").hidden = true; $("err").textContent = "اللينك ده ناقص أو اتقطع. افتحه تاني من الكتاب."; }
     return;
   }
-  const sm = /^#s\.([A-Za-z0-9_-]+)\.(\d+\.\d+)/.exec(location.hash);
+  const sm = /^#s\.([A-Za-z0-9_-]+)\.([0-9A-Za-z]+\.\d+)/.exec(location.hash);
   if (sm) { $("backLink").href = `#m.${sm[1]}.${sm[2]}`; $("back").hidden = false; }
   try {
     data = await decode(location.hash);
