@@ -11,6 +11,7 @@
   writes it): raw-deflated JSON {l: lecture, t: heading, b: text}, base64url,
   behind "1.". What follows '#' is never sent to any server - it is read here,
   on the reader's device, and turned into a prompt to copy or to open in an AI.
+  Only the book and section number of a printed QR are counted (countEvent).
 -->
 <style>
   :root {
@@ -59,6 +60,10 @@
   details pre { white-space: pre-wrap; direction: ltr; text-align: left; font: 13px/1.5 inherit;
                 font-family: system-ui, sans-serif; margin: 8px 0 0; max-height: 320px; overflow: auto; }
 </style>
+<!-- usage counts (GoatCounter) - see countEvent; no_onload: nothing is sent by itself -->
+<script data-goatcounter="https://famtranspro.goatcounter.com/count"
+        data-goatcounter-settings='{"no_onload": true}'
+        async src="//gc.zgo.at/count.js"></script>
 </head>
 <body>
 <main>
@@ -180,6 +185,16 @@ let data = null, mode = "simplify";
 function store(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
 function load(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
 
+// Usage counts: which printed QR was opened (qr/<book>/<section>) and which
+// section was read (ask/<book>/<section>). Counts only - nothing about who. A
+// long link (#1.) carries the section itself, so it is counted as ask/link and
+// nothing of it is sent. The title is fixed for the same reason.
+function countEvent(path, tries = 20) {
+  if (window.goatcounter && goatcounter.count) {
+    try { goatcounter.count({ path, title: "Ask AI", event: true }); } catch (e) {}
+  } else if (tries > 0) setTimeout(() => countEvent(path, tries - 1), 500);
+}
+
 async function decode(hash) {
   // short link (a QR printed beside a heading): #s.<book>.<section> - the
   // section is read from ask/<book>.json beside this page
@@ -286,7 +301,7 @@ async function menu(book, sid) {
 (async () => {
   const mm = /^#m\.([A-Za-z0-9_-]+)\.([0-9A-Za-z.]+)$/.exec(location.hash);
   if (mm) {
-    try { await menu(mm[1], mm[2]); }
+    try { await menu(mm[1], mm[2]); countEvent(`qr/${mm[1]}/${mm[2]}`); }
     catch (e) { $("menu").hidden = true; $("err").textContent = "اللينك ده ناقص أو اتقطع. افتحه تاني من الكتاب."; }
     return;
   }
@@ -303,6 +318,8 @@ async function menu(book, sid) {
       : "اللينك ده ناقص أو اتقطع. افتحه تاني من الكتاب.";
     return;
   }
+  const short = /^#s\.([A-Za-z0-9_-]+)\.([0-9A-Za-z.]+)$/.exec(location.hash);
+  countEvent(short ? `ask/${short[1]}/${short[2]}` : "ask/link");
   $("lecture").textContent = data.l;
   $("title").textContent = data.t;
   $("body").textContent = data.b;
